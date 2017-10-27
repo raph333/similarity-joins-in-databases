@@ -7,11 +7,11 @@ def read_txt(filename):
     :param filename: string *.txt
     :return: list where each line from the txt file represents a list itself
     """
-    inv_results = []
+    result = []
 
     with open(filename) as input_file:
         for row in csv.reader(input_file):
             row = list(map(int, row))
-            inv_results.append(row)
+            result.append(row)
 
-    return inv_results
+    return result
