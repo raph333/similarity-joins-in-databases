@@ -5,7 +5,7 @@ def read_txt(filename):
     """
     reads in txt file from working directory
     :param filename: string *.txt
-    :return: list where each line from the txt file represents a list itself
+    :return: list of lists where each line from the txt file represents an integer list
     """
     result = []
 
