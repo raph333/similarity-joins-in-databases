@@ -1,5 +1,5 @@
 from math import ceil
-
+import draft
 
 def eqo(r, s, t=0.5):
     return t/(t+1) * (len(r) + len(s))
@@ -36,5 +36,13 @@ def verify1(r, s, threshold, overlap, p_r, p_s):
 
 verify1(R[2], R[1], 0.5, overlap=3, p_r=2, p_s=3)
 
+def Verify(r, M, t):
+    results = []
+    print(r)
+    for s, overlap in M.items():
+        print(R[s])
+        res =verify1(r, R[s], t, overlap, draft.probing_prefix_length(r), len(s)-1)
+        results.append(res)
+    return results
 
 
