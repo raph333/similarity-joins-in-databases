@@ -12,7 +12,6 @@ R = [(1,3,5),  # R[0] ... r1
      ]
 
 
-
 def read_txt(filename):
     """
     reads in txt file from working directory
@@ -53,6 +52,15 @@ def indexing_prefix_length(r):
     return int(len(r) - np.ceil(eqo(r,r)) + 1)
 
 
+def Verify_old(r, M, t=0.5):
+    verified_pairs = []
+    for candidate in M.keys():
+        intersect = set(r).intersection(candidate)
+        if len(intersect) >= eqo(r, candidate):
+            verified_pairs.append( (r, candidate) )
+    return verified_pairs
+
+
 def verify1(r, s, threshold, overlap, p_r, p_s):
     """
     :param r: tuple1
@@ -78,6 +86,11 @@ def verify1(r, s, threshold, overlap, p_r, p_s):
 
 
 def Verify(r, M, t):
+    ''' @ r: tuple
+        @ M: dict of possible matching tuples (keys) and overlaps (values)
+        @ t: similarity threshold
+        For each tuple in M, call verify1, to check similarity with r.
+        return: list of of matching pairs (see verify1)'''
     results = []
     for s, overlap in M.items():
         res =verify1(r, s, t, overlap, probing_prefix_length(r), len(s)-1)
@@ -118,6 +131,7 @@ if __name__ == '__main__':
                 I[p] = []
             I[p].append(r)
         print('I: %s' % I)
+        #res += Verify_old(r, M, 0.5)
         res += Verify(r, M, 0.5)
         print('res: %s' % res)
     
