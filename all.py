@@ -79,13 +79,7 @@ def verify1(r, s, threshold, overlap, p_r, p_s):
 
 def Verify(r, M, t):
     results = []
-    print(r)
     for s, overlap in M.items():
-        print(r)
-        print(s)
-        print(overlap, type(overlap))
-        print(probing_prefix_length(r), type(probing_prefix_length(r)))
-        print(len(s)-1)
         res =verify1(r, s, t, overlap, probing_prefix_length(r), len(s)-1)
         results.append(res)
     return results
@@ -112,7 +106,6 @@ if __name__ == '__main__':
             print('p: %s' % p)
             if p in I.keys():
                 for s in I[p]:  # for vector index in inverted list
-                    print('length(s): %s' % len(s))
                     if len(s) < lb(r):  # if other vector shorter than lbr
                         I[p].remove(s)
                     else:
