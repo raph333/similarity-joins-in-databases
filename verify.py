@@ -36,6 +36,7 @@ def verify1(r, s, threshold, overlap, p_r, p_s):
 
 verify1(R[2], R[1], 0.5, overlap=3, p_r=2, p_s=3)
 
+
 def Verify(r, M, t):
     results = []
     print(r)
