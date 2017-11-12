@@ -128,4 +128,5 @@ if __name__ == '__main__':
                       p_s=metrics[s]['prob_prefix']):
                 res.append([r, s])
         print('res: %s' % res)
+        print('number of pairs: {}'.format(len(res)))
 
