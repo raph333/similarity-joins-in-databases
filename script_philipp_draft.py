@@ -4,6 +4,7 @@
 import numpy as np
 import argparse
 
+
 def read_txt(filename):
     """
     reads in txt file from working directory
@@ -42,7 +43,7 @@ def indexing_prefix_length(r):
     return int(len(r) - np.ceil(eqo(r, r)) + 1)
 
 
-def verify(r, s, t, overlap, p_r, p_s):
+def verify(r, s, t, olap, p_r, p_s):
     """
     :param r: tuple1
     :param s: tuple2
@@ -52,11 +53,13 @@ def verify(r, s, t, overlap, p_r, p_s):
     :param p_s: prefix position
     :return: tuple of tuples if the overlap to specified indices exceeds a given threshold
     """
-    max_r = len(r) - p_r - 1 + overlap
-    max_s = len(s) - p_s - 1 + overlap
+    overlap = olap
+    max_r = len(r) - p_r + overlap
+    max_s = len(s) - p_s + overlap
     print('max_r:{}'.format(max_r))
     print('max_s:{}'.format(max_s))
-    while max_r >= t & max_s >= t & overlap < t:
+    print('required_overlap:{}'.format(t))
+    while overlap < t <= min(max_r, max_s):
         print('p_r:{}'.format(p_r))
         print('p_s:{}'.format(p_s))
         print('r:{}'.format(r))
@@ -65,16 +68,17 @@ def verify(r, s, t, overlap, p_r, p_s):
         print('max_s:{}'.format(max_s))
         print('r[p_r]:{}'.format(r[p_r]))
         print('s[p_s]:{}'.format(s[p_s]))
-        if r[p_r-1] == s[p_s-1]:
+        if r[p_r] == s[p_s]:
             p_r = p_r + 1
             p_s = p_s + 1
             overlap += 1
-        elif r[p_r-1] < s[p_s-1]:
+        elif r[p_r] < s[p_s]:
             p_r = p_r + 1
             max_r = max_r - 1
         else:
             p_s = p_s + 1
             max_s = max_s - 1
+            print('updated p_s{0} and max_s{1}'.format(p_s, max_s))
 
     return True if overlap >= t else False
 
@@ -139,7 +143,7 @@ if __name__ == '__main__':
             required_overlap = int(np.ceil(eqo(probe, test_input[s])))
             print('required olap: ' + str(required_overlap))
             print('overlap:{}'.format(M[s]))
-            if verify(probe, test_input[s], t=required_overlap, overlap=M[s], p_r=metrics_test[r]['prob_prefix'],
+            if verify(probe, test_input[s], t=required_overlap, olap=M[s], p_r=metrics_test[r]['prob_prefix']-1,
                       p_s=metrics_test[s]['prob_prefix']):
                 res.append([r, s])
         print('res: %s' % res)

@@ -49,14 +49,14 @@ def verify(r, s, t, overlap, p_r, p_s):
     :param p_s: prefix position
     :return: tuple of tuples if the overlap to specified indices exceeds a given threshold
     """
-    max_r = len(r) - p_r - 1 + overlap
-    max_s = len(s) - p_s - 1 + overlap
-    while max_r >= t & max_s >= t & overlap < t:
-        if r[p_r-1] == s[p_s-1]:
+    max_r = len(r) - p_r + overlap
+    max_s = len(s) - p_s + overlap
+    while overlap < t <= min(max_r, max_s):
+        if r[p_r] == s[p_s]:
             p_r = p_r + 1
             p_s = p_s + 1
             overlap += 1
-        elif r[p_r-1] < s[p_s-1]:
+        elif r[p_r] < s[p_s]:
             p_r = p_r + 1
             max_r = max_r - 1
         else:
@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
         for s, overlap in M.items():
             required_overlap = int(np.ceil(eqo(probe, data[s], jaccard_threshold)))
-            if verify(probe, data[s], t=required_overlap, overlap=M[s], p_r=metrics[r]['prob_prefix'],
+            if verify(probe, data[s], t=required_overlap, overlap=M[s], p_r=metrics[r]['prob_prefix']-1,
                       p_s=metrics[s]['prob_prefix']):
                 res.append([r, s])
         print('res: %s' % res)
