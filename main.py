@@ -3,6 +3,8 @@
 
 import numpy as np
 import argparse
+import time
+
 
 def read_txt(filename):
     """
@@ -16,7 +18,6 @@ def read_txt(filename):
     with open(filename) as input_file:
         for row in input_file:
             row = tuple(map(int, row.split()))
-            # result.append(row)
             result['r' + str(i)] = row
             i += 1
 
@@ -43,11 +44,11 @@ def verify(r, s, t, overlap, p_r, p_s):
     """
     :param r: tuple1
     :param s: tuple2
-    :param t: float
-    :param overlap: integer
+    :param t: float required overlap
+    :param overlap till positions p_r and p_s
     :param p_r: prefix position
     :param p_s: prefix position
-    :return: tuple of tuples if the overlap to specified indices exceeds a given threshold
+    :return: True if the overlap if sufficient for jaccard threshold
     """
     max_r = len(r) - p_r + overlap
     max_s = len(s) - p_s + overlap
@@ -89,8 +90,10 @@ if __name__ == '__main__':
 
     parser.add_argument('filename', help="*.txt file in working directory",
                         type=str)
-    parser.add_argument('jaccard_threshold', help="threshold for calcuation",
+    parser.add_argument('jaccard_threshold', help="threshold for calculation",
                         type=float)
+
+    start = time.process_time()
 
     args = parser.parse_args()
     
@@ -103,11 +106,11 @@ if __name__ == '__main__':
     I = {}
     for r in data.keys():
         probe = data[r]
-        print('r: ' + str(probe))
+        # print('r: ' + str(probe))
         M = {}
         for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
-            print('p: %s' % p)
-            if p in I.keys():
+            # print('p: %s' % p)
+            if p in set(I.keys()):
                 for s in I[p]:  # for vector index in inverted list
                     if len(data[s]) < metrics[r]['lb']:  # if other vector shorter than lbr
                         I[p].remove(s)
@@ -115,18 +118,21 @@ if __name__ == '__main__':
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
-        print('M: %s' % M)
+        # print('M: %s' % M)
         for p in probe[0:metrics[r]['ind_prefix']]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
-        print('I: %s' % I)
+        # print('I: %s' % I)
 
         for s, overlap in M.items():
             required_overlap = int(np.ceil(eqo(probe, data[s], jaccard_threshold)))
             if verify(probe, data[s], t=required_overlap, overlap=M[s], p_r=metrics[r]['prob_prefix']-1,
                       p_s=metrics[s]['prob_prefix']):
                 res.append([r, s])
-        print('res: %s' % res)
-        print('number of pairs: {}'.format(len(res)))
+        # print('res: %s' % res)
+
+    end = time.process_time()
+    print('number of pairs: {}'.format(len(res)))
+    print('CPU- Time: {}'.format(end-start))
 

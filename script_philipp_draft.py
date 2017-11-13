@@ -122,14 +122,16 @@ if __name__ == '__main__':
         M = {}
         for p in probe[0:metrics_test[r]['prob_prefix']]:  # for char in probing prefix
             print('p: %s' % p)
-            if p in I.keys():
-                for s in I[p]:  # for vector index in inverted list
-                    if len(test_input[s]) < metrics_test[r]['lb']:  # if other vector shorter than lbr
-                        I[p].remove(s)
-                    else:
-                        if s not in M.keys():
-                            M[s] = 0
-                        M[s] += 1
+            # if p in I.keys():
+
+            gen = (s for s in I[p] if p in I.keys())
+            for s in gen:  # for vector index in inverted list
+                if len(test_input[s]) < metrics_test[r]['lb']:  # if other vector shorter than lbr
+                    I[p].remove(s)
+                else:
+                    if s not in M.keys():
+                        M[s] = 0
+                    M[s] += 1
         print('M: %s' % M)
         for p in probe[0:metrics_test[r]['ind_prefix']]:  # for char in indexing prefix
             if p not in I.keys():
