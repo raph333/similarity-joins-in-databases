@@ -40,7 +40,7 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-def verify(r, s, t, overlap, p_r, p_s):
+def verify(r, s, t, olap, p_r, p_s):
     """
     :param r: tuple1
     :param s: tuple2
@@ -48,8 +48,9 @@ def verify(r, s, t, overlap, p_r, p_s):
     :param overlap till positions p_r and p_s
     :param p_r: prefix position
     :param p_s: prefix position
-    :return: True if the overlap if sufficient for jaccard threshold
+    :return: True if the overlap is sufficient for jaccard threshold
     """
+    overlap = olap
     max_r = len(r) - p_r + overlap
     max_s = len(s) - p_s + overlap
     while overlap < t <= min(max_r, max_s):
@@ -83,6 +84,11 @@ def metrics(collection, t):
     return result
 
 
+def required_overlap_matrix(collection, t):
+
+    return np.matrix([[np.ceil(eqo(i, j, t)) for i in collection.values()] for j in collection.values()])
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
@@ -101,7 +107,9 @@ if __name__ == '__main__':
     data = read_txt(args.filename)
     
     metrics = metrics(data, jaccard_threshold)
+    # matrix = required_overlap_matrix(data, jaccard_threshold)
 
+    # print(matrix)
     res = []  # result: pairs of similar vectors
     I = {}
     for r in data.keys():
@@ -110,14 +118,16 @@ if __name__ == '__main__':
         M = {}
         for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
             # print('p: %s' % p)
-            if p in set(I.keys()):
-                for s in I[p]:  # for vector index in inverted list
+            try:
+                for s in I[p]:
                     if len(data[s]) < metrics[r]['lb']:  # if other vector shorter than lbr
                         I[p].remove(s)
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
+            except:
+                pass
         # print('M: %s' % M)
         for p in probe[0:metrics[r]['ind_prefix']]:  # for char in indexing prefix
             if p not in I.keys():
@@ -126,13 +136,14 @@ if __name__ == '__main__':
         # print('I: %s' % I)
 
         for s, overlap in M.items():
-            required_overlap = int(np.ceil(eqo(probe, data[s], jaccard_threshold)))
-            if verify(probe, data[s], t=required_overlap, overlap=M[s], p_r=metrics[r]['prob_prefix']-1,
-                      p_s=metrics[s]['prob_prefix']):
+            required_overlap = np.ceil(eqo(probe, data[s], jaccard_threshold))
+            if verify(probe, data[s], t=required_overlap, olap=0, p_r=0,
+                      p_s=0):
+            # if verify(probe, data[s], t=required_overlap, olap=M[s], p_r=metrics[r]['prob_prefix']-1,
+            #           p_s=metrics[s]['prob_prefix']):
                 res.append([r, s])
         # print('res: %s' % res)
 
     end = time.process_time()
-    print('number of pairs: {}'.format(len(res)))
-    print('CPU- Time: {}'.format(end-start))
-
+    print(len(res))
+    print(end-start)
