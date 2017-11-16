@@ -118,11 +118,12 @@ if __name__ == '__main__':
         probe = data[r]
         # print('r: ' + str(probe))
         M = {}
-        for p in probe[0:metrics[r]['prob_prefix']+1]:  # for char in probing prefix
+        for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
             # print('p: %s' % p)
             try:
                 for s in I[p]:
-                    if len(data[s]) < metrics[r]['lb']:  # if other vector shorter than lbr
+                    # just added the -1; need to figure out why our lb is too long
+                    if len(data[s]) < metrics[r]['lb']-1:  # if other vector shorter than lbr
                         I[p].remove(s)
                     else:
                         if s not in M.keys():
@@ -131,7 +132,7 @@ if __name__ == '__main__':
             except:
                 pass
         # print('M: %s' % M)
-        for p in probe[0:metrics[r]['ind_prefix']+1]:  # for char in indexing prefix
+        for p in probe[0:metrics[r]['ind_prefix']]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
@@ -196,7 +197,7 @@ if __name__ == '__main__':
     print(end-start)
 
 
-    print('False negatives:')
+    print('\nFalse negatives:')
     print('These are the pairs missed by the normal version:')
     print([x for x in res_ver if x not in res])
     
