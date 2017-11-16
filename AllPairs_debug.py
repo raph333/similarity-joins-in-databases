@@ -18,7 +18,7 @@ def read_txt(filename):
     with open(filename) as input_file:
         for row in input_file:
             row = tuple(map(int, row.split()))
-            result['r' + str(i)] = row
+            result[str(i)] = row
             i += 1
 
     return result
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             try:
                 for s in I[p]:
                     # just added the -1; need to figure out why our lb is too long
-                    if len(data[s]) < metrics[r]['lb']-1:  # if other vector shorter than lbr
+                    if len(data[s]) < int(metrics[r]['lb']):  # if other vector shorter than lbr
                         I[p].remove(s)
                     else:
                         if s not in M.keys():
