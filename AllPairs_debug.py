@@ -118,7 +118,7 @@ if __name__ == '__main__':
         probe = data[r]
         # print('r: ' + str(probe))
         M = {}
-        for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
+        for p in probe[0:metrics[r]['prob_prefix']+1]:  # for char in probing prefix
             # print('p: %s' % p)
             try:
                 for s in I[p]:
@@ -131,7 +131,7 @@ if __name__ == '__main__':
             except:
                 pass
         # print('M: %s' % M)
-        for p in probe[0:metrics[r]['ind_prefix']]:  # for char in indexing prefix
+        for p in probe[0:metrics[r]['ind_prefix']+1]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
@@ -196,6 +196,11 @@ if __name__ == '__main__':
     print(end-start)
 
 
+    print('False negatives:')
     print('These are the pairs missed by the normal version:')
     print([x for x in res_ver if x not in res])
+    
+    print('False positives:')
+    print('These are the pairs found by the normal version but not by all-verify:')
+    print([x for x in res if x not in res_ver])
 
