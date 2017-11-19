@@ -15,7 +15,7 @@ def take_process_time(function):
         start = time.process_time()
         result = function(*args, **kwars)
         end = time.process_time()
-        execution_time = end - start
+        execution_time = round(end - start, 2)
         #print('process time: %.2f' % execution_time)
         return result, execution_time
     return wrapper
@@ -92,10 +92,12 @@ len_diff = []  # track how many elements are removed from inverted list I
 
 @take_process_time
 def AllPairs(Data, threshold=0.7):
-    ''' @ Data: list of tuples to be compared
+    ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
+                integers for similarity search
         return: list of matching tuples'''
-    res = []  # result: pairs of similar tuples
-    I = {}
+    res = []  # result: collect pairs of similar tuples
+    I = {}  # inverted list: key: character
+    # value: list of tuple-indices ('r1', 'r33',...) which contain the charater
     
     key_list = list(data.keys())
     #np.random.shuffle(key_list)
@@ -111,12 +113,10 @@ def AllPairs(Data, threshold=0.7):
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
             if p in I.keys():
-                for s in I[p]:  # for vector index in inverted list
-                    if len(Data[s]) < lb_r:  # if other vector shorter than lbr
-                        #before_len = len(I[p])
-                        I[p] = [x for x in I[p] if x != s]  # I[p].remove(s)
-                        #len_diff.append(before_len - len(I[p]))
-                        #pass
+                for s in I[p]:  # for 'r122...' in index in inverted list
+                    if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
+                        I[p] = [x for x in I[p] if x != s]
+                        # I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
                     else:
                         if s not in M.keys():
                             M[s] = 0
@@ -149,9 +149,9 @@ if __name__ == '__main__':
     jaccard_threshold = args.jaccard_threshold
     data = read_txt(args.filename)
 
-    res, exec_time = AllPairs(data, threshold=jaccard_threshold)
+    pairs, exec_time = AllPairs(data, threshold=jaccard_threshold)
     
     end = time.process_time()
     
-    print(len(res))
+    print(len(pairs))
     print(round(end-start, 2))
