@@ -1,9 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
 
-import numpy as np
+"""
+
 import argparse
+import numpy as np
 import time
+
+
+def take_process_time(function):
+    def wrapper(*args, **kwars):
+        #print('\nrunning function %s...' % function.__name__)
+        start = time.process_time()
+        result = function(*args, **kwars)
+        end = time.process_time()
+        execution_time = end - start
+        #print('process time: %.2f' % execution_time)
+        return result, execution_time
+    return wrapper
 
 
 def read_txt(filename):
@@ -22,22 +37,6 @@ def read_txt(filename):
             i += 1
 
     return result
-
-
-def eqo(r, s, t):
-    return t / (t + 1) * (len(r) + len(s))
-
-
-def lb(r, t):
-    return len(r) * t
-
-
-def probing_prefix_length(r, t):
-    return int(len(r) - np.ceil(lb(r, t)) + 1)
-
-
-def indexing_prefix_length(r, t):
-    return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -68,82 +67,91 @@ def verify(r, s, t, olap, p_r, p_s):
     return True if overlap >= t else False
 
 
-def metrics(collection, t):
-    """
-    :param collection: dictionary with key: ID and value = list like output of read_txt
-    :return: metrics collection for all-pair alg
-    """
-    result = {}
-    for i in collection.keys():
-        result[i] = {'length': len(collection[i]),
-                     'eqo': eqo(collection[i], collection[i], t),
-                     'lb': lb(collection[i], t),
-                     'prob_prefix': probing_prefix_length(collection[i], t),
-                     'ind_prefix': indexing_prefix_length(collection[i], t)}
-
-    return result
+def sim(r, s):
+    ''' Calculate Jaccard-similarity between two sets of characters.
+    @ r, s: two sets of characters (can have datatype list, tupe or set)'''
+    intersection = set(r).intersection(set(s))
+    union = set(r).union(set(s))
+    return len(intersection) / float(len(union))
 
 
-def required_overlap_matrix(collection, t):
+def eqo(r, s, t):
+    return t/(t+1) * (len(r) + len(s))
 
-    return np.matrix([[np.ceil(eqo(i, j, t)) for i in collection.values()] for j in collection.values()])
+def lb(r, t):
+    return len(r) * t
+
+def probing_prefix_length(r, t):
+    return int(len(r) - np.ceil( lb(r, t) ) + 1)
+
+def indexing_prefix_length(r, t):
+    return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-if __name__ == '__main__':
+len_diff = []  # track how many elements are removed from inverted list I
 
-    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('filename', help="*.txt file in working directory",
-                        type=str)
-    parser.add_argument('jaccard_threshold', help="threshold for calculation",
-                        type=float)
-
-    start = time.process_time()
-
-    args = parser.parse_args()
-    
-    jaccard_threshold = args.jaccard_threshold
-    data = read_txt(args.filename)
-    
-    metrics = metrics(data, jaccard_threshold)
-    # matrix = required_overlap_matrix(data, jaccard_threshold)
-
-    # print(matrix)
-    res = []  # result: pairs of similar vectors
+@take_process_time
+def AllPairs(Data, threshold=0.7):
+    ''' @ Data: list of tuples to be compared
+        return: list of matching tuples'''
+    res = []  # result: pairs of similar tuples
     I = {}
-    for r in data.keys():
-        probe = data[r]
-        # print('r: ' + str(probe))
+    
+    key_list = list(data.keys())
+    #np.random.shuffle(key_list)
+    key_list = sorted(key_list, key=lambda x: len(Data[x]))
+    for r in key_list:
+        probe = Data[r]
+        
+        # calculate metrics:
+        probing_prefix_len = probing_prefix_length(probe, threshold)
+        indexing_prefix_len = indexing_prefix_length(probe, threshold)
+        lb_r = lb(probe, threshold)
+        
         M = {}
-        for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
-            # print('p: %s' % p)
-            try:
-                for s in I[p]:
-                    if len(data[s]) < metrics[r]['lb']:  # if other vector shorter than lbr
-                        I[p].remove(s)
+        for p in probe[0:probing_prefix_len]:  # for char in probing prefix
+            if p in I.keys():
+                for s in I[p]:  # for vector index in inverted list
+                    if len(Data[s]) < lb_r:  # if other vector shorter than lbr
+                        #before_len = len(I[p])
+                        I[p] = [x for x in I[p] if x != s]  # I[p].remove(s)
+                        #len_diff.append(before_len - len(I[p]))
+                        #pass
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
-            except:
-                pass
-        # print('M: %s' % M)
-        for p in probe[0:metrics[r]['ind_prefix']]:  # for char in indexing prefix
+        
+        for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
-        # print('I: %s' % I)
-
         for s, overlap in M.items():
-            required_overlap = np.ceil(eqo(probe, data[s], jaccard_threshold))
-            if verify(probe, data[s], t=required_overlap, olap=0, p_r=0,
-                      p_s=0):
-            # if verify(probe, data[s], t=required_overlap, olap=M[s], p_r=metrics[r]['prob_prefix']-1,
-            #           p_s=metrics[s]['prob_prefix']):
-                res.append([r, s])
-        # print('res: %s' % res)
+            req_overlap = np.ceil(eqo(probe, Data[s], threshold))
+            if verify(probe, Data[s], t=req_overlap, olap=0, p_r=0, p_s=0):
+                res.append( (r, s) )  # using tuples to make results hashable    
+    return res
 
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('filename', help="*.txt file in working directory",
+                        type=str)
+    parser.add_argument('jaccard_threshold', help="threshold for calculation",
+                        type=float)
+    args = parser.parse_args()
+
+
+    start = time.process_time()
+
+    jaccard_threshold = args.jaccard_threshold
+    data = read_txt(args.filename)
+
+    res, exec_time = AllPairs(data, threshold=jaccard_threshold)
+    
     end = time.process_time()
+    
     print(len(res))
-    print(end-start)
+    print(round(end-start, 2))
