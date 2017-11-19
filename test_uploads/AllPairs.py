@@ -4,20 +4,23 @@
 
 """
 
+import argparse
 import numpy as np
 import time
 
 
-def take_process_time(function):
-    def wrapper(*args, **kwars):
-        #print('\nrunning function %s...' % function.__name__)
-        start = time.process_time()
-        result = function(*args, **kwars)
-        end = time.process_time()
-        execution_time = end - start
-        #print('process time: %.2f' % execution_time)
-        return result, execution_time
-    return wrapper
+# =============================================================================
+# def take_process_time(function):
+#     def wrapper(*args, **kwars):
+#         #print('\nrunning function %s...' % function.__name__)
+#         start = time.process_time()
+#         result = function(*args, **kwars)
+#         end = time.process_time()
+#         execution_time = end - start
+#         #print('process time: %.2f' % execution_time)
+#         return result, execution_time
+#     return wrapper
+# =============================================================================
 
 
 def read_txt(filename):
@@ -71,7 +74,7 @@ def sim(r, s):
     @ r, s: two sets of characters (can have datatype list, tupe or set)'''
     intersection = set(r).intersection(set(s))
     union = set(r).union(set(s))
-    return len(intersection) / len(union)
+    return len(intersection) / float(len(union))
 
 
 def eqo(r, s, t):
@@ -87,20 +90,24 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-@take_process_time
-def AllPairs(Data, threshold=0.7, check_for=[]):
+#@take_process_time
+def AllPairs(Data, threshold=0.7):
     ''' @ Data: list of tuples to be compared
         return: list of matching tuples'''
     res = []  # result: pairs of similar vectors
     I = {}
-    for r, probe in Data.items():
+    key_list = list(data.keys())
+    np.random.shuffle(key_list)
+    #for r, probe in Data.items():
+    for r in key_list:
+        probe = Data[r]
         M = {}
         for p in probe[0:probing_prefix_length(probe, threshold)]:  # for char in probing prefix
             if p in I.keys():
                 for s in I[p]:  # for vector index in inverted list
                     if len(Data[s]) < lb(probe, threshold):  # if other vector shorter than lbr
-                        #I[p].remove(s)
-                        pass
+                        I[p].remove(s)
+                        #pass
                     else:
                         if s not in M.keys():
                             M[s] = 0
@@ -119,12 +126,27 @@ def AllPairs(Data, threshold=0.7, check_for=[]):
 
 if __name__ == '__main__':
     
-    spotify = read_txt('../spotify-track-dedup-raw.txt')
+    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('filename', help="*.txt file in working directory",
+                        type=str)
+    parser.add_argument('jaccard_threshold', help="threshold for calculation",
+                        type=float)
+    args = parser.parse_args()
 
 
-    res, ex_time = AllPairs(spotify, threshold=0.7)
+    start = time.process_time()
+
+    jaccard_threshold = args.jaccard_threshold
+    data = read_txt(args.filename)
+
+    res = AllPairs(data, threshold=jaccard_threshold)
+    
+    end = time.process_time()
+    
     print(len(res))
-    print(round(ex_time, 2))
+    print(round(end-start, 2))
     
 
     
