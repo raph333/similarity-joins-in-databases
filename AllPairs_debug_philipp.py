@@ -37,11 +37,11 @@ def ub(r, t):
 
 
 def probing_prefix_length(r, t):
-    return int(len(r) - np.ceil(lb(r, t)) + 1)
+    return len(r) - np.ceil(lb(r, t)) + 1
 
 
 def indexing_prefix_length(r, t):
-    return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
+    return len(r) - np.ceil(eqo(r, r, t)) + 1
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -82,16 +82,16 @@ def metrics(collection, t):
         result[i] = {'length': len(collection[i]),
                      'eqo': eqo(collection[i], collection[i], t),
                      'lb': lb(collection[i], t),
-                     'ub': ub(collection[i], t),
+                     #'ub': ub(collection[i], t),
                      'prob_prefix': probing_prefix_length(collection[i], t),
                      'ind_prefix': indexing_prefix_length(collection[i], t)}
 
     return result
 
 
-def required_overlap_matrix(collection, t):
+#def required_overlap_matrix(collection, t):
 
-    return np.matrix([[np.ceil(eqo(i, j, t)) for i in collection.values()] for j in collection.values()])
+    #return np.matrix([[np.ceil(eqo(i, j, t)) for i in collection.values()] for j in collection.values()])
 
 
 if __name__ == '__main__':
@@ -123,12 +123,11 @@ if __name__ == '__main__':
         probe = data[r]
         # print('r: ' + str(probe))
         M = {}
-        for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
+        for p in probe[0:(metrics[r]['length'] - np.ceil(metrics[r]['eqo']) + 1)]:  # for char in probing prefix
             # print('p: %s' % p)
             try:
                 for s in I[p]:
-                    # just added the -1; need to figure out why our lb is too long
-                    if len(data[s]) < metrics[r]['lb']:  # if other vector shorter than lbr
+                    if metrics[s]['length'] < metrics[r]['lb']:  # if other vector shorter than lbr
                         I[p].remove(s)
                     else:
                         if s not in M.keys():
@@ -149,15 +148,15 @@ if __name__ == '__main__':
                       p_s=0):
             # if verify(probe, data[s], t=required_overlap, olap=M[s], p_r=metrics[r]['prob_prefix']-1,
             #           p_s=metrics[s]['prob_prefix']):
-                res.append( (r, s) )  # using tuples to make results hashable
+                res.append((r, s))  # using tuples to make results hashable
         # print('res: %s' % res)
 
     end = time.process_time()
     print('normal version')
     print(len(res))
     print(end-start)
-    
-    
+
+    start = time.process_time()
     # ALL-VERIFY VERSION: CORRECT (198 PAIRS)
     ###########################################################################
     # print(matrix)
@@ -167,7 +166,7 @@ if __name__ == '__main__':
         probe = data[r]
         # print('r: ' + str(probe))
         M = {}
-        for p in probe[0:metrics[r]['prob_prefix']]:  # for char in probing prefix
+        for p in probe[0:(metrics[r]['length'] - np.ceil(metrics[r]['eqo']) + 1)]:  # for char in probing prefix
             # print('p: %s' % p)
             try:
                 for s in I[p]:
@@ -199,7 +198,7 @@ if __name__ == '__main__':
     end = time.process_time()
     print('\nall verify version')
     print(len(res_ver))
-    # print(end-start)
+    print(end-start)
 
 
     print('\nFalse negatives:')
