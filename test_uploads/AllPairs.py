@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+"""
+
+import numpy as np
+import time
+
+
+def take_process_time(function):
+    def wrapper(*args, **kwars):
+        #print('\nrunning function %s...' % function.__name__)
+        start = time.process_time()
+        result = function(*args, **kwars)
+        end = time.process_time()
+        execution_time = end - start
+        #print('process time: %.2f' % execution_time)
+        return result, execution_time
+    return wrapper
+
+
+def read_txt(filename):
+    """
+    reads in txt file from working directory
+    :param filename: string *.txt with sorted rows of data. each row is sorted and all rows are sorted in ascending order
+    :return: dictionary with key = ID and value = integer list
+    """
+    result = {}
+    i = 1
+
+    with open(filename) as input_file:
+        for row in input_file:
+            row = tuple(map(int, row.split()))
+            result['r' + str(i)] = row
+            i += 1
+
+    return result
+
+
+def verify(r, s, t, olap, p_r, p_s):
+    """
+    :param r: tuple1
+    :param s: tuple2
+    :param t: float required overlap
+    :param overlap till positions p_r and p_s
+    :param p_r: prefix position
+    :param p_s: prefix position
+    :return: True if the overlap is sufficient for jaccard threshold
+    """
+    overlap = olap
+    max_r = len(r) - p_r + overlap
+    max_s = len(s) - p_s + overlap
+    while overlap < t <= min(max_r, max_s):
+        if r[p_r] == s[p_s]:
+            p_r = p_r + 1
+            p_s = p_s + 1
+            overlap += 1
+        elif r[p_r] < s[p_s]:
+            p_r = p_r + 1
+            max_r = max_r - 1
+        else:
+            p_s = p_s + 1
+            max_s = max_s - 1
+
+    return True if overlap >= t else False
+
+
+def sim(r, s):
+    ''' Calculate Jaccard-similarity between two sets of characters.
+    @ r, s: two sets of characters (can have datatype list, tupe or set)'''
+    intersection = set(r).intersection(set(s))
+    union = set(r).union(set(s))
+    return len(intersection) / len(union)
+
+
+def eqo(r, s, t):
+    return t/(t+1) * (len(r) + len(s))
+
+def lb(r, t):
+    return len(r) * t
+
+def probing_prefix_length(r, t):
+    return int(len(r) - np.ceil( lb(r, t) ) + 1)
+
+def indexing_prefix_length(r, t):
+    return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
+
+
+@take_process_time
+def AllPairs(Data, threshold=0.7, check_for=[]):
+    ''' @ Data: list of tuples to be compared
+        return: list of matching tuples'''
+    res = []  # result: pairs of similar vectors
+    I = {}
+    for r, probe in Data.items():
+        M = {}
+        for p in probe[0:probing_prefix_length(probe, threshold)]:  # for char in probing prefix
+            if p in I.keys():
+                for s in I[p]:  # for vector index in inverted list
+                    if len(Data[s]) < lb(probe, threshold):  # if other vector shorter than lbr
+                        #I[p].remove(s)
+                        pass
+                    else:
+                        if s not in M.keys():
+                            M[s] = 0
+                        M[s] += 1
+        
+        for p in probe[0:indexing_prefix_length(probe, threshold)]:  # for char in indexing prefix
+            if p not in I.keys():
+                I[p] = []
+            I[p].append(r)
+        for s, overlap in M.items():
+            req_overlap = np.ceil(eqo(probe, Data[s], threshold))
+            if verify(probe, Data[s], t=req_overlap, olap=0, p_r=0, p_s=0):
+                res.append( (r, s) )  # using tuples to make results hashable    
+    return res
+
+
+if __name__ == '__main__':
+    
+    spotify = read_txt('../spotify-track-dedup-raw.txt')
+
+
+    res, ex_time = AllPairs(spotify, threshold=0.7)
+    print(len(res))
+    print(round(ex_time, 2))
+    
+
+    
