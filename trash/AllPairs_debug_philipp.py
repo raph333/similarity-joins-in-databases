@@ -82,10 +82,8 @@ def metrics(collection, t):
         result[i] = {'length': len(collection[i]),
                      'eqo': eqo(collection[i], collection[i], t),
                      'lb': lb(collection[i], t),
-                     #'ub': ub(collection[i], t),
                      'prob_prefix': probing_prefix_length(collection[i], t),
                      'ind_prefix': indexing_prefix_length(collection[i], t)}
-
     return result
 
 
@@ -107,10 +105,10 @@ if __name__ == '__main__':
     start = time.process_time()
 
     args = parser.parse_args()
-    
+
     jaccard_threshold = args.jaccard_threshold
     data = read_txt(args.filename)
-    
+
     metrics = metrics(data, jaccard_threshold)
     # matrix = required_overlap_matrix(data, jaccard_threshold)
 
@@ -129,6 +127,7 @@ if __name__ == '__main__':
                 for s in I[p]:
                     if metrics[s]['length'] < metrics[r]['lb']:  # if other vector shorter than lbr
                         I[p].remove(s)
+                        # I[p] = list(filter(s.__ne__, I[p]))
                     else:
                         if s not in M.keys():
                             M[s] = 0
@@ -200,11 +199,10 @@ if __name__ == '__main__':
     print(len(res_ver))
     print(end-start)
 
-
     print('\nFalse negatives:')
     print('These are the pairs missed by the normal version:')
     print([x for x in res_ver if x not in res])
-    
+
     print('False positives:')
     print('These are the pairs found by the normal version but not by all-verify:')
     print([x for x in res if x not in res_ver])
