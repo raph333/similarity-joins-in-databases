@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 """
 
 import argparse
@@ -14,7 +15,7 @@ def take_process_time(function):
         start = time.process_time()
         result = function(*args, **kwars)
         end = time.process_time()
-        execution_time = round(end - start, 2)
+        execution_time = end - start
         # print('process time: %.2f' % execution_time)
         return result, execution_time
 
@@ -96,12 +97,10 @@ len_diff = []  # track how many elements are removed from inverted list I
 
 @take_process_time
 def AllPairs(Data, threshold=0.7):
-    ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
-                integers for similarity search
+    ''' @ Data: list of tuples to be compared
         return: list of matching tuples'''
-    res = []  # result: collect pairs of similar tuples
-    I = {}  # inverted list: key: character
-    # value: list of tuple-indices ('r1', 'r33',...) which contain the charater
+    res = []  # result: pairs of similar tuples
+    I = {}
 
     key_list = list(data.keys())
     # np.random.shuffle(key_list)
@@ -115,24 +114,40 @@ def AllPairs(Data, threshold=0.7):
         lb_r = lb(probe, threshold)
 
         M = {}
+        after_common_token_position = {}
+        verify_starting_position = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
             if p in I.keys():
-                for s in I[p]:  # for 'r122...' in index in inverted list
-                    if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        I[p] = [x for x in I[p] if x != s]
-                        # I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
+                for s in I[p]:  # for vector index in inverted list
+                    if len(Data[s]) < lb_r:  # if other vector shorter than lbr
+                        # before_len = len(I[p])
+                        I[p] = [x for x in I[p] if x != s]  # I[p].remove(s)
+                        # len_diff.append(before_len - len(I[p]))
+                        # pass
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
+                        after_common_token_position[s] = Data[s].index(p) + 1
+                        verify_starting_position[r] = indexing_prefix_len
+            else:
+                # print(type(list(I.keys())))
+                if len(I.keys()) != 0:
+                    if p > list(I.keys())[-1]:
+                        verify_starting_position[r] = probe.index(p)
+                # else:
+                #     verify_starting_position[r] = indexing_prefix_len
+                # print(after_common_token_position)
 
+        # print(last_common_token)
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
             req_overlap = np.ceil(eqo(probe, Data[s], threshold))
-            if verify(probe, Data[s], t=req_overlap, olap=0, p_r=0, p_s=0):
+            # s_starting_position = Data[s].index[last_common_token] + 1
+            if verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=indexing_prefix_len, p_s=after_common_token_position[s]):
                 res.append((r, s))  # using tuples to make results hashable
     return res
 
@@ -151,9 +166,9 @@ if __name__ == '__main__':
     jaccard_threshold = args.jaccard_threshold
     data = read_txt(args.filename)
 
-    pairs, exec_time = AllPairs(data, threshold=jaccard_threshold)
+    res, exec_time = AllPairs(data, threshold=jaccard_threshold)
 
     end = time.process_time()
 
-    print(len(pairs))
+    print(len(res))
     print(round(end - start, 2))
