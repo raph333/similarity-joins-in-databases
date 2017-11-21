@@ -68,6 +68,21 @@ def verify(r, s, t, olap, p_r, p_s):
     return True if overlap >= t else False
 
 
+def metrics(collection, t):
+    """
+    :param collection: dictionary with key: ID and value = list like output of read_txt
+    :return: metrics collection for all-pair alg
+    """
+    result = {}
+    for i in collection.keys():
+        result[i] = {'length': len(collection[i]),
+                     'eqo': eqo(collection[i], collection[i], t),
+                     'lb': lb(collection[i], t),
+                     'prob_prefix': probing_prefix_length(collection[i], t),
+                     'ind_prefix': indexing_prefix_length(collection[i], t)}
+    return result
+
+
 def sim(r, s):
     ''' Calculate Jaccard-similarity between two sets of characters.
     @ r, s: two sets of characters (can have datatype list, tupe or set)'''
@@ -93,6 +108,7 @@ def indexing_prefix_length(r, t):
 
 
 len_diff = []  # track how many elements are removed from inverted list I
+
 
 
 @take_process_time
@@ -132,9 +148,18 @@ def AllPairs(Data, threshold=0.7):
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
-            req_overlap = np.ceil(eqo(probe, Data[s], threshold))
-            if verify(probe, Data[s], t=req_overlap, olap=0, p_r=0, p_s=0):
-                res.append((r, s))  # using tuples to make results hashable
+            req_overlap = np.ceil(eqo(probe, Data[s], jaccard_threshold))
+            indexing_prefix_len_s = indexing_prefix_length(Data[s], threshold)
+            probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
+            indexing_prefix_position_s = min(indexing_prefix_len_s, len(Data[s]) - 1)
+            w_r = probe[probing_prefix_position_r]
+            w_s = Data[s][indexing_prefix_position_s]
+            if w_r < w_s:
+                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+            else:
+                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
+            if ret:
+                res.append((r, s))
     return res
 
 
