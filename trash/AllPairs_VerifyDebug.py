@@ -53,6 +53,7 @@ def verify(r, s, t, olap, p_r, p_s):
     overlap = olap
     max_r = len(r) - p_r + overlap
     max_s = len(s) - p_s + overlap
+
     while overlap < t <= min(max_r, max_s):
         if r[p_r] == s[p_s]:
             p_r = p_r + 1
@@ -92,26 +93,54 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-len_diff = []  # track how many elements are removed from inverted list I
+def metrics(collection, t):
+    """
+    :param collection: dictionary with key: ID and value = list like output of read_txt
+    :return: metrics collection for all-pair alg
+    """
+    result = {}
+    for i in collection.keys():
+        result[i] = {'length': len(collection[i]),
+                     'eqo': eqo(collection[i], collection[i], t),
+                     'lb': lb(collection[i], t),
+                     'prob_prefix': probing_prefix_length(collection[i], t),
+                     'ind_prefix': indexing_prefix_length(collection[i], t)}
+    return result
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('filename', help="*.txt file in working directory",
+                        type=str)
+    parser.add_argument('jaccard_threshold', help="threshold for calculation",
+                        type=float)
 
 
-@take_process_time
-def AllPairs(Data, threshold=0.7):
-    ''' @ Data: list of tuples to be compared
-        return: list of matching tuples'''
+    args = parser.parse_args()
+
+    jaccard_threshold = args.jaccard_threshold
+    Data = read_txt(args.filename)
+
+    metrics = metrics(Data, jaccard_threshold)
+
     res = []  # result: pairs of similar tuples
     I = {}
 
-    key_list = list(data.keys())
+    key_list = list(Data.keys())
     # np.random.shuffle(key_list)
     key_list = sorted(key_list, key=lambda x: len(Data[x]))
+
+    start = time.process_time()
+
     for r in key_list:
         probe = Data[r]
 
         # calculate metrics:
-        probing_prefix_len = probing_prefix_length(probe, threshold)
-        indexing_prefix_len = indexing_prefix_length(probe, threshold)
-        lb_r = lb(probe, threshold)
+        probing_prefix_len = probing_prefix_length(probe, jaccard_threshold)
+        indexing_prefix_len = indexing_prefix_length(probe, jaccard_threshold)
+        lb_r = lb(probe, jaccard_threshold)
 
         M = {}
         after_common_token_position = {}
@@ -130,45 +159,45 @@ def AllPairs(Data, threshold=0.7):
                         M[s] += 1
                         after_common_token_position[s] = Data[s].index(p) + 1
                         verify_starting_position[r] = indexing_prefix_len
-            else:
-                # print(type(list(I.keys())))
-                if len(I.keys()) != 0:
-                    if p > list(I.keys())[-1]:
-                        verify_starting_position[r] = probe.index(p)
-                # else:
-                #     verify_starting_position[r] = indexing_prefix_len
-                # print(after_common_token_position)
 
-        # print(last_common_token)
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
-            req_overlap = np.ceil(eqo(probe, Data[s], threshold))
-            # s_starting_position = Data[s].index[last_common_token] + 1
-            if verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=indexing_prefix_len, p_s=after_common_token_position[s]):
-                res.append((r, s))  # using tuples to make results hashable
-    return res
+            req_overlap = np.ceil(eqo(probe, Data[s], jaccard_threshold))
+            indexing_prefix_len_s = indexing_prefix_length(Data[s], threshold)
+            probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
+            w_r = probe[probing_prefix_position_r]
+            # print(w_r)
+            indexing_prefix_position_s = min(indexing_prefix_len_s, len(Data[s] - 1))
+            w_s = Data[s][indexing_prefix_position_s]
+            # print(w_s)
+            if w_r < w_s:
+                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+            else:
+                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
+            if ret:
+                res.append((r, s))
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('filename', help="*.txt file in working directory",
-                        type=str)
-    parser.add_argument('jaccard_threshold', help="threshold for calculation",
-                        type=float)
-    args = parser.parse_args()
+    if __name__ == '__main__':
+        parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        parser.add_argument('filename', help="*.txt file in working directory",
+                            type=str)
+        parser.add_argument('jaccard_threshold', help="threshold for calculation",
+                            type=float)
+        args = parser.parse_args()
 
-    start = time.process_time()
+        start = time.process_time()
 
-    jaccard_threshold = args.jaccard_threshold
-    data = read_txt(args.filename)
+        jaccard_threshold = args.jaccard_threshold
+        data = read_txt(args.filename)
 
-    res, exec_time = AllPairs(data, threshold=jaccard_threshold)
+        res, exec_time = AllPairs(data, threshold=jaccard_threshold)
 
-    end = time.process_time()
+        end = time.process_time()
 
-    print(len(res))
-    print(round(end - start, 2))
+        print(len(res))
+        print(round(end - start, 2))
