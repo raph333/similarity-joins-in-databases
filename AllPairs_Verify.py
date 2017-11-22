@@ -133,10 +133,10 @@ def AllPairs(Data, threshold=0.7):
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
             if p in I.keys():
-                for s in I[p]:  # for 'r122...' in index in inverted list
+                for s in I[p][:]:  # for 'r122...' in index in inverted list
                     if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        I[p] = [x for x in I[p] if x != s]
-                        # I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
+                        # I[p] = [x for x in I[p] if x != s]
+                        I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
                     else:
                         if s not in M.keys():
                             M[s] = 0
@@ -147,16 +147,17 @@ def AllPairs(Data, threshold=0.7):
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
-            req_overlap = np.ceil(eqo(probe, Data[s], jaccard_threshold))
-            indexing_prefix_len_s = indexing_prefix_length(Data[s], threshold)
+            current_candidate = Data[s]
+            req_overlap = np.ceil(eqo(probe, current_candidate, jaccard_threshold))
+            indexing_prefix_len_s = indexing_prefix_length(current_candidate, threshold)
             probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
-            indexing_prefix_position_s = min(indexing_prefix_len_s, len(Data[s]) - 1)
+            indexing_prefix_position_s = min(indexing_prefix_len_s, len(current_candidate) - 1)
             w_r = probe[probing_prefix_position_r]
-            w_s = Data[s][indexing_prefix_position_s]
+            w_s = current_candidate[indexing_prefix_position_s]
             if w_r < w_s:
-                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+                ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
             else:
-                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
+                ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
             if ret:
                 res.append((r, s))
     return res
