@@ -110,7 +110,6 @@ def indexing_prefix_length(r, t):
 len_diff = []  # track how many elements are removed from inverted list I
 
 
-
 @take_process_time
 def AllPairs(Data, threshold=0.7):
     ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
