@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5460cb87-0971-4f1b-aa0c-e5dbf7c4d662" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AllPairs_Verify.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/AllPairs.zip" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/AllPairs_VerifyDebug.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/AllPairs_debug.py" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AllPairs.py" afterPath="$PROJECT_DIR$/AllPairs.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AllPairs_Verify.py" afterPath="$PROJECT_DIR$/AllPairs_Verify.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -33,21 +28,11 @@
       <file leaf-file-name="AllPairs_Verify.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/AllPairs_Verify.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-417">
-              <caret line="153" column="85" lean-forward="true" selection-start-line="153" selection-start-column="85" selection-end-line="153" selection-end-column="85" />
+            <state relative-caret-position="-1192">
+              <caret line="110" column="0" lean-forward="false" selection-start-line="110" selection-start-column="0" selection-end-line="110" selection-end-column="0" />
               <folding>
                 <element signature="e#57#72#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AllPairs_VerifyDebug.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/trash/AllPairs_VerifyDebug.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="95" column="0" lean-forward="false" selection-start-line="95" selection-start-column="0" selection-end-line="107" selection-end-column="17" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -369,9 +354,9 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.38322368" sideWeight="0.50907713" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32894737" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28947368" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.20888157" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20888157" sideWeight="0.4978678" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20065789" sideWeight="0.49092284" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.6940789" sideWeight="0.49092284" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39967105" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -504,14 +489,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/trash/AllPairs_VerifyDebug.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="95" column="0" lean-forward="false" selection-start-line="95" selection-start-column="0" selection-end-line="107" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/AllPairs.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="44">
@@ -522,10 +499,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/trash/AllPairs_VerifyDebug.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="95" column="0" lean-forward="false" selection-start-line="95" selection-start-column="0" selection-end-line="107" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/AllPairs_Verify.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-417">
-          <caret line="153" column="85" lean-forward="true" selection-start-line="153" selection-start-column="85" selection-end-line="153" selection-end-column="85" />
+        <state relative-caret-position="-1192">
+          <caret line="110" column="0" lean-forward="false" selection-start-line="110" selection-start-column="0" selection-end-line="110" selection-end-column="0" />
           <folding>
             <element signature="e#57#72#0" expanded="true" />
           </folding>
