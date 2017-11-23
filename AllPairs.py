@@ -132,10 +132,9 @@ def AllPairs(Data, threshold=0.7):
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
             if p in I.keys():
-                for s in I[p][:]:  # for 'r122...' in index in inverted list
+                for s in I[p].copy():  # for 'r122...' in index in inverted list
                     if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        # I[p] = [x for x in I[p] if x != s]
-                        I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
+                        I[p].remove(s)
                     else:
                         if s not in M.keys():
                             M[s] = 0
@@ -143,8 +142,8 @@ def AllPairs(Data, threshold=0.7):
 
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
-                I[p] = []
-            I[p].append(r)
+                I[p] = set([])
+            I[p].add(r)
         for s, overlap in M.items():
             current_candidate = Data[s]
             req_overlap = np.ceil(eqo(probe, current_candidate, jaccard_threshold))
