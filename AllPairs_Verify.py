@@ -132,15 +132,17 @@ def AllPairs(Data, threshold=0.7):
 
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
-            if p in I.keys():
+            # try:
+            if I.get(p) is not None:
                 for s in I[p][:]:  # for 'r122...' in index in inverted list
                     if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        # I[p] = [x for x in I[p] if x != s]
-                        I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
+                        I[p].remove(s)
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
+            # except KeyError:
+            #     pass
 
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():

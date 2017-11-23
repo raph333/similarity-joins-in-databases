@@ -9,19 +9,6 @@ import numpy as np
 import time
 
 
-def take_process_time(function):
-    def wrapper(*args, **kwars):
-        # print('\nrunning function %s...' % function.__name__)
-        start = time.process_time()
-        result = function(*args, **kwars)
-        end = time.process_time()
-        execution_time = round(end - start, 2)
-        # print('process time: %.2f' % execution_time)
-        return result, execution_time
-
-    return wrapper
-
-
 def read_txt(filename):
     """
     reads in txt file from working directory
@@ -107,10 +94,6 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-len_diff = []  # track how many elements are removed from inverted list I
-
-
-@take_process_time
 def AllPairs(Data, threshold=0.7):
     ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
                 integers for similarity search
@@ -122,44 +105,53 @@ def AllPairs(Data, threshold=0.7):
     key_list = list(data.keys())
     # np.random.shuffle(key_list)
     key_list = sorted(key_list, key=lambda x: len(Data[x]))
+
+    metr = metrics(Data, threshold)
+
+    start = time.process_time()
     for r in key_list:
         probe = Data[r]
 
-        # calculate metrics:
-        probing_prefix_len = probing_prefix_length(probe, threshold)
-        indexing_prefix_len = indexing_prefix_length(probe, threshold)
-        lb_r = lb(probe, threshold)
+        # fetch metrics:
+        probing_prefix_len = metr[r]['prob_prefix']
+        indexing_prefix_len = metr[r]['ind_prefix']
+        lb_r = metr[r]['lb']
 
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
-            if p in I.keys():
-                for s in I[p]:  # for 'r122...' in index in inverted list
+            # try:
+            if I.get(p) is not None:
+                for s in I[p][:]:  # for 'r122...' in index in inverted list
                     if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        I[p] = [x for x in I[p] if x != s]
-                        # I[p].remove(s)  # ...THIS GIVES WRONG RESULT. WHY?
+                        I[p].remove(s)
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
+            # except KeyError:
+            #     pass
 
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
-            req_overlap = np.ceil(eqo(probe, Data[s], jaccard_threshold))
-            indexing_prefix_len_s = indexing_prefix_length(Data[s], threshold)
+            candidate = Data[s]
+            candidate_ind_prefix = metr[s]['ind_prefix']
+            req_overlap = np.ceil(eqo(probe, candidate, jaccard_threshold))
             probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
-            indexing_prefix_position_s = min(indexing_prefix_len_s, len(Data[s]) - 1)
+            indexing_prefix_position_s = min(candidate_ind_prefix, len(candidate) - 1)
             w_r = probe[probing_prefix_position_r]
             w_s = Data[s][indexing_prefix_position_s]
             if w_r < w_s:
-                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+                ret = verify(probe, candidate, t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
             else:
-                ret = verify(probe, Data[s], t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
+                ret = verify(probe, candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=candidate_ind_prefix)
             if ret:
                 res.append((r, s))
-    return res
+
+    duration = time.process_time() - start
+    return res, duration
 
 
 if __name__ == '__main__':
@@ -171,14 +163,10 @@ if __name__ == '__main__':
                         type=float)
     args = parser.parse_args()
 
-    start = time.process_time()
-
     jaccard_threshold = args.jaccard_threshold
     data = read_txt(args.filename)
 
-    pairs, exec_time = AllPairs(data, threshold=jaccard_threshold)
+    pairs = AllPairs(data, threshold=jaccard_threshold)
 
-    end = time.process_time()
-
-    print(len(pairs))
-    print(round(end - start, 2))
+    print(len(pairs[0]))
+    print(round(pairs[1], 2))
