@@ -21,23 +21,23 @@ def read_txt(filename):
     with open(filename) as input_file:
         for row in input_file:
             row = tuple(map(int, row.split()))
-            result['r' + str(i)] = row
+            result[str(i)] = row
             i += 1
 
     return result
 
 
-def verify(r, s, t, olap, p_r, p_s):
+def verify(r, s, t, overlap, p_r, p_s):
     """
     :param r: tuple1
     :param s: tuple2
     :param t: float required overlap
-    :param overlap till positions p_r and p_s
+    :param overlap: overlap till positions p_r and p_s
     :param p_r: prefix position
     :param p_s: prefix position
     :return: True if the overlap is sufficient for jaccard threshold
     """
-    overlap = olap
+
     max_r = len(r) - p_r + overlap
     max_s = len(s) - p_s + overlap
     while overlap < t <= min(max_r, max_s):
@@ -100,12 +100,9 @@ def AllPairs(Data, threshold=0.7):
         return: list of matching tuples'''
     res = []  # result: collect pairs of similar tuples
     I = {}  # inverted list: key: character
-    # value: list of tuple-indices ('r1', 'r33',...) which contain the charater
-
-    key_list = list(data.keys())
+    key_list = list(Data.keys())
     # np.random.shuffle(key_list)
     key_list = sorted(key_list, key=lambda x: len(Data[x]))
-
     metr = metrics(Data, threshold)
 
     start = time.process_time()
@@ -119,7 +116,6 @@ def AllPairs(Data, threshold=0.7):
 
         M = {}
         for p in probe[0:probing_prefix_len]:  # for char in probing prefix
-            # try:
             if I.get(p) is not None:
                 for s in I[p][:]:  # for 'r122...' in index in inverted list
                     if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
@@ -128,8 +124,6 @@ def AllPairs(Data, threshold=0.7):
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
-            # except KeyError:
-            #     pass
 
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
             if p not in I.keys():
@@ -138,15 +132,16 @@ def AllPairs(Data, threshold=0.7):
         for s, overlap in M.items():
             candidate = Data[s]
             candidate_ind_prefix = metr[s]['ind_prefix']
+            pre_overlap = M[s]
             req_overlap = np.ceil(eqo(probe, candidate, jaccard_threshold))
             probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
             indexing_prefix_position_s = min(candidate_ind_prefix, len(candidate) - 1)
             w_r = probe[probing_prefix_position_r]
             w_s = Data[s][indexing_prefix_position_s]
             if w_r < w_s:
-                ret = verify(probe, candidate, t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+                ret = verify(probe, candidate, t=req_overlap, overlap=pre_overlap, p_r=probing_prefix_len, p_s=pre_overlap)
             else:
-                ret = verify(probe, candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=candidate_ind_prefix)
+                ret = verify(probe, candidate, t=req_overlap, overlap=pre_overlap, p_r=pre_overlap, p_s=candidate_ind_prefix)
             if ret:
                 res.append((r, s))
 
