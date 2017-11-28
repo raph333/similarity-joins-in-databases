@@ -8,19 +8,6 @@ import numpy as np
 import time
 
 
-def take_process_time(function):
-    def wrapper(*args, **kwars):
-        # print('\nrunning function %s...' % function.__name__)
-        start = time.process_time()
-        result = function(*args, **kwars)
-        end = time.process_time()
-        execution_time = round(end - start, 2)
-        # print('process time: %.2f' % execution_time)
-        return result, execution_time
-
-    return wrapper
-
-
 def read_txt(filename):
     """
     reads in txt file from working directory
@@ -37,6 +24,19 @@ def read_txt(filename):
             i += 1
 
     return result
+
+
+def read_txt_list(filename):
+    """
+    reads in txt file from working directory
+    :param filename: string *.txt with sorted rows of data. each row is sorted and all rows are sorted in ascending order
+    :return: dictionary with key = ID and value = integer list
+    """
+    data_list = []
+    with open(filename) as infile:
+        for line in infile.readlines():
+            data_list.append(tuple([int(x) for x in line.split()]))
+    return data_list
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -82,14 +82,6 @@ def metrics(collection, t):
     return result
 
 
-def sim(r, s):
-    ''' Calculate Jaccard-similarity between two sets of characters.
-    @ r, s: two sets of characters (can have datatype list, tupe or set)'''
-    intersection = set(r).intersection(set(s))
-    union = set(r).union(set(s))
-    return len(intersection) / float(len(union))
-
-
 def eqo(r, s, t):
     return t / (t + 1) * (len(r) + len(s))
 
@@ -106,10 +98,6 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-len_diff = []  # track how many elements are removed from inverted list I
-
-
-@take_process_time
 def AllPairs(Data, threshold=0.7):
     ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
                 integers for similarity search
@@ -118,11 +106,7 @@ def AllPairs(Data, threshold=0.7):
     I = {}  # inverted list: key: character
     # value: list of tuple-indices ('r1', 'r33',...) which contain the charater
 
-    key_list = list(data.keys())
-    # np.random.shuffle(key_list)
-    key_list = sorted(key_list, key=lambda x: len(Data[x]))
-    for r in key_list:
-        probe = Data[r]
+    for r, probe in enumerate(Data):
 
         # calculate metrics:
         probing_prefix_len = probing_prefix_length(probe, threshold)
@@ -170,14 +154,14 @@ if __name__ == '__main__':
                         type=float)
     args = parser.parse_args()
 
-    start = time.process_time()
+    start = time.time()
 
     jaccard_threshold = args.jaccard_threshold
-    data = read_txt(args.filename)
+    data = read_txt_list(args.filename)
 
-    pairs, exec_time = AllPairs(data, threshold=jaccard_threshold)
+    pairs = AllPairs(data, threshold=jaccard_threshold)
 
-    end = time.process_time()
+    end = time.time()
 
     print(len(pairs))
     print(round(end - start, 2))
