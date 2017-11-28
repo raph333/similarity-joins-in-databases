@@ -8,24 +8,6 @@ import numpy as np
 import time
 
 
-def read_txt(filename):
-    """
-    reads in txt file from working directory
-    :param filename: string *.txt with sorted rows of data. each row is sorted and all rows are sorted in ascending order
-    :return: dictionary with key = ID and value = integer list
-    """
-    result = {}
-    i = 1
-
-    with open(filename) as input_file:
-        for row in input_file:
-            row = tuple(map(int, row.split()))
-            result['r' + str(i)] = row
-            i += 1
-
-    return result
-
-
 def read_txt_list(filename):
     """
     reads in txt file from working directory
@@ -103,10 +85,10 @@ def AllPairs(Data, threshold=0.7):
                 integers for similarity search
         return: list of matching tuples'''
     res = []  # result: collect pairs of similar tuples
-    I = {}  # inverted list: key: character
-    # value: list of tuple-indices ('r1', 'r33',...) which contain the charater
+    I = {}
 
-    for r, probe in enumerate(Data):
+    for r in range(0,len(Data)):
+        probe = Data[r]
 
         # calculate metrics:
         probing_prefix_len = probing_prefix_length(probe, threshold)
@@ -142,7 +124,7 @@ def AllPairs(Data, threshold=0.7):
                 ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
             if ret:
                 res.append((r, s))
-    return I, res
+    return res
 
 
 if __name__ == '__main__':
@@ -159,7 +141,7 @@ if __name__ == '__main__':
     jaccard_threshold = args.jaccard_threshold
     data = read_txt_list(args.filename)
 
-    I, pairs = AllPairs(data, threshold=jaccard_threshold)
+    pairs = AllPairs(data, threshold=jaccard_threshold)
 
     end = time.time()
 
