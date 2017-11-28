@@ -35,7 +35,7 @@ def read_txt_list(filename):
     data_list = []
     with open(filename) as infile:
         for line in infile.readlines():
-            data_list.append(tuple([int(x) for x in line.split()]))
+            data_list.append([int(x) for x in line.split()])
     return data_list
 
 
@@ -125,7 +125,7 @@ def AllPairs(Data, threshold=0.7):
                         M[s] += 1
 
         for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
-            if p not in I.keys():
+            if I.get(p) is None:
                 I[p] = []
             I[p].append(r)
         for s, overlap in M.items():
@@ -142,7 +142,7 @@ def AllPairs(Data, threshold=0.7):
                 ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
             if ret:
                 res.append((r, s))
-    return res
+    return I, res
 
 
 if __name__ == '__main__':
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     jaccard_threshold = args.jaccard_threshold
     data = read_txt_list(args.filename)
 
-    pairs = AllPairs(data, threshold=jaccard_threshold)
+    I, pairs = AllPairs(data, threshold=jaccard_threshold)
 
     end = time.time()
 
