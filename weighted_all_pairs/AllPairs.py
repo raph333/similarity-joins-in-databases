@@ -23,6 +23,10 @@ def read_txt_list(filename):
 
 
 def read_weights(filename):
+    """
+    @ filename: file with token-weights
+    return: dictionary with a token as key and its weight as value
+    """
     token2weight = {}
     with open(filename) as infile:
         for line in infile.readlines():
@@ -33,10 +37,28 @@ def read_weights(filename):
     return token2weight
 
 
-def jaccard(r, s):
+# =============================================================================
+# def jaccard(r, s):
+#     r = set(r)
+#     s = set(s)
+#     return len(r.intersection(s)) / len(r.union(s))
+# =============================================================================
+
+
+def weighted_jaccard(r, s, token2weight):
+    """
+    For now: get weights bei dicitonary lookupt
+    Maybe it's better to give a list of weights as it is used anyway in the
+    AllPairs function.
+    """
     r = set(r)
     s = set(s)
-    return len(r.intersection(s)) / len(r.union(s))
+    intersect_weight = sum([token2weight[x] for x in r.intersection(s)])
+    union_weight = sum([token2weight[x] for x in r.union(s)])
+    #diff_weight = sum([token2weight[x] for x in r.symmetric_difference(s)])
+    #union_weight = intersect_weight + diff_weight
+    weighted_jaccard_similarity = intersect_weight / union_weight
+    return weighted_jaccard_similarity
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -82,21 +104,64 @@ def metrics(collection, t):
     return result
 
 
-def eqo(r, s, t):
-    return t / (t + 1) * (len(r) + len(s))
-
-
+# FUNCTIONS FOR OLD ALGORITHM
+# =============================================================================
 def lb(r, t):
     return len(r) * t
+
+
+def eqo(r, s, t):
+    return t / (t + 1) * (len(r) + len(s))
 
 
 def probing_prefix_length(r, t):
     return int(len(r) - np.ceil(lb(r, t)) + 1)
 
 
-def indexing_prefix_length(r, t):
+def indexing_prefix_length(r, t):  # (for now: still used for weighted Alg.)
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
+# =============================================================================
 
+
+def weight_lb(total_set_weight, t):
+    """
+    Let r be a set with @total_set_weight.
+    @t: Jaccard similarity threshold
+    Any other set s needs at least a total set weight of 'lower_bound' to be
+    (potentially) similar to r.
+    """
+    lower_bound = total_set_weight * t
+    return lower_bound
+
+
+def weighted_probing_prefix_length(weight_left, t):
+    """
+    @ total_set_weight: sum of the weights of all tokens in a set r
+    @ t: Jaccard similarity threshold
+    If the Alg. has checked this prefix of a set r and there's still no
+    overlap with another set s, the the similarity between r and s cannot
+    be larger or equal to threshold t.
+    Hence, only the prefix of any set r hast to be checked.
+    return: length of the probing prefix of set r
+    """
+    lower_bound = weight_lb(weight_left[0], t)
+    ppl = 0  # probing prefix length
+    while ppl < len(weight_left) and weight_left[ppl] >= lower_bound:
+        ppl += 1
+    return ppl
+
+
+# NEW INDEXING PREFIX: under construction but not yet used
+# =============================================================================
+def weight_eqo(r_total_weight, s_total_weight, t):
+    return t / (t + 1) * (r_total_weight + s_total_weight)
+
+
+def weight_indexing_prefix_length(r_weight, t):
+    ipl = int(r_weight - np.ceil(weight_eqo(r_weight, r_weight, t)) + 1)
+    return ipl
+# =============================================================================
+        
 
 def weight_remaining_after_position(weights):
     """
@@ -104,7 +169,7 @@ def weight_remaining_after_position(weights):
     return: list: the value at each position indicates the sum of the the
             weights of all positions after (and including) the current position
     """
-    weight_left = [0] * len(weights)  # initialize 'empty' list
+    weight_left = [0] * len(weights)   # initialize 'empty' list
     weight_left[-1] = weights[-1]  # set last element
     
     # Accumulate weights starting at the end of the list:
@@ -123,25 +188,28 @@ def AllPairs(Data, token2weight, t=0.7):
     res = []  # result: collect pairs of similar tuples
     I = {}  # inverted list (implemented as dictionary)
     
-    for r in range(0, len(Data)):
-        probe = Data[r]
+    for r, probe in enumerate(Data):
         M = {}  # set of potential pairs
         
         weight_list = [token2weight[x] for x in probe]
         weight_left = weight_remaining_after_position(weight_list)
+        r_weight = weight_left[0]  # sum of the weights of all tokens in r
         
-        for p in probe[0:probing_prefix_length(probe, t)]:
+        for p in probe[0 : weighted_probing_prefix_length(weight_left, t) + 1]:
             if p in I.keys():
                 for i in range(len(I[p])-1, -1, -1):
                     s = I[p][i]
-                    if len(Data[s]) < lb(probe, t):
+                    
+                    s_weight = sum([token2weight[x] for x in Data[s]])
+                    if s_weight <= weight_lb(r_weight, t):
                         del I[p][i]
+                    
                     else:
-                        if s not in M.keys():
+                        if M.get(s) is None:
                             M[s] = 0
                         M[s] += 1
 
-        for p in probe[0:indexing_prefix_length(probe, t)]:
+        for p in probe[0 : indexing_prefix_length(probe, t)]:
             if I.get(p) is None:
                 I[p] = []
             I[p].append(r)
@@ -167,7 +235,7 @@ def AllPairs(Data, token2weight, t=0.7):
 #             if ret:
 #                 res.append((r, s))
 # =============================================================================
-            if jaccard(probe, Data[s]) >= t:
+            if weighted_jaccard(probe, Data[s], token2weight) >= t:
                 res.append((r, s))
     return res
 
@@ -186,14 +254,12 @@ if __name__ == '__main__':
                         type=float)
     args = parser.parse_args()
 
-    start = time.process_time()
-
     jaccard_threshold = args.jaccard_threshold
     data = read_txt_list(args.filename)
     weight_dict = read_weights(args.weights_file)
-
+    
+    start = time.process_time()
     pairs = AllPairs(data, weight_dict, t=jaccard_threshold)
-
     end = time.process_time()
 
     print(len(pairs))

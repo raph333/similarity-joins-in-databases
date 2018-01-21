@@ -27,9 +27,17 @@ probes = np.random.choice(l, 100)  # remove these elements from list/set
 
 
 @take_process_time
-def remove_from_list(input_list,elements_to_remove):
+def remove_from_list(input_list, elements_to_remove):
     for element in elements_to_remove:
         input_list.remove(element)
+    return None
+
+
+@take_process_time
+def remove_from_list_to_set(input_list, elements_to_remove):
+    s = set(input_list)
+    for element in elements_to_remove:
+        s.remove(element)
     return None
 
 
@@ -41,4 +49,6 @@ def remove_from_set(input_set,elements_to_remove):
 
 
 remove_from_list(l, probes)
+#remove_from_list_to_set(l, probes)
 remove_from_set(s, probes)
+
