@@ -25,16 +25,16 @@ def read_txt_list(filename):
 def read_weights(filename):
     """
     @ filename: file with token-weights
-    return: dictionary with a token as key and its weight as value
+    return: list with weight of a token n at position n
+            e.g. token 42: get the weight of this token with: weight_array[42]
     """
-    token2weight = {}
+    weight_array = [0]  # start with weight of token 1 at position 1
     with open(filename) as infile:
         for line in infile.readlines():
             row = line.strip().split(':')
-            token = int(row[0])
             weight = float(row[1])
-            token2weight[token] = weight
-    return token2weight
+            weight_array.append(weight)
+    return weight_array
 
 
 # =============================================================================
@@ -45,7 +45,7 @@ def read_weights(filename):
 # =============================================================================
 
 
-def weighted_jaccard(r, s, token2weight):
+def weighted_jaccard(r, s, weights):
     """
     For now: get weights bei dicitonary lookupt
     Maybe it's better to give a list of weights as it is used anyway in the
@@ -53,8 +53,8 @@ def weighted_jaccard(r, s, token2weight):
     """
     r = set(r)
     s = set(s)
-    intersect_weight = sum([token2weight[x] for x in r.intersection(s)])
-    union_weight = sum([token2weight[x] for x in r.union(s)])
+    intersect_weight = sum([weights[token] for token in r.intersection(s)])
+    union_weight = sum([weights[token] for token in r.union(s)])
     #diff_weight = sum([token2weight[x] for x in r.symmetric_difference(s)])
     #union_weight = intersect_weight + diff_weight
     weighted_jaccard_similarity = intersect_weight / union_weight
@@ -118,7 +118,8 @@ def probing_prefix_length(r, t):
     return int(len(r) - np.ceil(lb(r, t)) + 1)
 
 
-def indexing_prefix_length(r, t):  # (for now: still used for weighted Alg.)
+# for now: still used for weighted Alg; does prefix length matter :-) ?
+def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 # =============================================================================
 
@@ -145,10 +146,11 @@ def weighted_probing_prefix_length(weight_left, t):
     return: length of the probing prefix of set r
     """
     lower_bound = weight_lb(weight_left[0], t)
-    ppl = 0  # probing prefix length
-    while ppl < len(weight_left) and weight_left[ppl] >= lower_bound:
-        ppl += 1
-    return ppl
+    index = 0  # check any set r until (including) the position 'index'
+    while index < len(weight_left) and weight_left[index] >= lower_bound:
+        index += 1
+    probing_prefix_length = index + 1
+    return probing_prefix_length
 
 
 # NEW INDEXING PREFIX: under construction but not yet used
@@ -163,6 +165,8 @@ def weight_indexing_prefix_length(r_weight, t):
 # =============================================================================
         
 
+# Die Funktion ist neu und berechent mir (vermutlich infeffizient...:-) )
+# Wie viel Gewicht nach Position x noch übrig ist
 def weight_remaining_after_position(weights):
     """
     @ weights: list of token weights
@@ -179,7 +183,7 @@ def weight_remaining_after_position(weights):
     return weight_left
 
 
-def AllPairs(Data, token2weight, t=0.7):
+def AllPairs(Data, weights, t=0.7):
     """
     @ Data: dict with key: index (r1, r2, ...) and value: tuples of
             integers for similarity search
@@ -191,17 +195,17 @@ def AllPairs(Data, token2weight, t=0.7):
     for r, probe in enumerate(Data):
         M = {}  # set of potential pairs
         
-        weight_list = [token2weight[x] for x in probe]
-        weight_left = weight_remaining_after_position(weight_list)
-        r_weight = weight_left[0]  # sum of the weights of all tokens in r
+        r_weights = [weights[token] for token in probe]
+        r_weight_left = weight_remaining_after_position(r_weights)
+        r_weights_sum = r_weight_left[0]  # sum of weights of all tokens in r
         
-        for p in probe[0 : weighted_probing_prefix_length(weight_left, t) + 1]:
+        for p in probe[0 : weighted_probing_prefix_length(r_weight_left, t)]:
             if p in I.keys():
                 for i in range(len(I[p])-1, -1, -1):
                     s = I[p][i]
                     
-                    s_weight = sum([token2weight[x] for x in Data[s]])
-                    if s_weight <= weight_lb(r_weight, t):
+                    s_weights_sum = sum([weights[token] for token in Data[s]])
+                    if s_weights_sum <= weight_lb(r_weights_sum, t):
                         del I[p][i]
                     
                     else:
@@ -235,7 +239,7 @@ def AllPairs(Data, token2weight, t=0.7):
 #             if ret:
 #                 res.append((r, s))
 # =============================================================================
-            if weighted_jaccard(probe, Data[s], token2weight) >= t:
+            if weighted_jaccard(probe, Data[s], weights) >= t:
                 res.append((r, s))
     return res
 

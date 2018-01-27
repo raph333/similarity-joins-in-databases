@@ -11,7 +11,8 @@ import time
 def read_txt_list(filename):
     """
     reads in txt file from working directory
-    :param filename: string *.txt with sorted rows of data. each row is sorted and all rows are sorted in ascending order
+    :param filename: string *.txt with sorted rows of data. each row is
+                     sorted and all rows are sorted in ascending order
     :return: dictionary with key = ID and value = integer list
     """
     data_list = []
@@ -19,6 +20,12 @@ def read_txt_list(filename):
         for line in infile.readlines():
             data_list.append([int(x) for x in line.split()])
     return data_list
+
+
+def jaccard(r, s):
+    r = set(r)
+    s = set(s)
+    return len(r.intersection(s)) / len(r.union(s))
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -80,70 +87,81 @@ def indexing_prefix_length(r, t):
     return int(len(r) - np.ceil(eqo(r, r, t)) + 1)
 
 
-def AllPairs(Data, threshold=0.7):
-    ''' @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
-                integers for similarity search
-        return: list of matching tuples'''
+def AllPairs(Data, t=0.7):
+    """
+    @ Data: dict with key: index ('r1, r2, ...) and value: tuples of
+            integers for similarity search
+    return: list of matching tuples
+    """
     res = []  # result: collect pairs of similar tuples
-    I = {}
+    I = {}  # inverted list (implemented as dictionary)
 
-    for r in range(0,len(Data)):
+    for r in range(0, len(Data)):
         probe = Data[r]
+        M = {}  # set of potential pairs
 
-        # calculate metrics:
-        probing_prefix_len = probing_prefix_length(probe, threshold)
-        indexing_prefix_len = indexing_prefix_length(probe, threshold)
-        lb_r = lb(probe, threshold)
-
-        M = {}
-        for p in probe[0:probing_prefix_len]:  # for char in probing prefix
+        for p in probe[0:probing_prefix_length(probe, t)]:
             if p in I.keys():
-                for s in I[p][:]:  # for 'r122...' in index in inverted list
-                    if len(Data[s]) < lb_r:  # if other vector is shorter than lb_r
-                        I[p].remove(s)
+                for i in range(len(I[p])-1, -1, -1):
+                    s = I[p][i]
+                    if len(Data[s]) < lb(probe, t):
+                        del I[p][i]
                     else:
                         if s not in M.keys():
                             M[s] = 0
                         M[s] += 1
 
-        for p in probe[0:indexing_prefix_len]:  # for char in indexing prefix
+        for p in probe[0:indexing_prefix_length(probe, t)]:
             if I.get(p) is None:
                 I[p] = []
             I[p].append(r)
+
         for s, overlap in M.items():
-            current_candidate = Data[s]
-            req_overlap = np.ceil(eqo(probe, current_candidate, jaccard_threshold))
-            indexing_prefix_len_s = indexing_prefix_length(current_candidate, threshold)
-            probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
-            indexing_prefix_position_s = min(indexing_prefix_len_s, len(current_candidate) - 1)
-            w_r = probe[probing_prefix_position_r]
-            w_s = current_candidate[indexing_prefix_position_s]
-            if w_r < w_s:
-                ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=probing_prefix_len, p_s=M[s])
-            else:
-                ret = verify(probe, current_candidate, t=req_overlap, olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
-            if ret:
+# =============================================================================
+#             current_candidate = Data[s]
+#             req_overlap = np.ceil(eqo(probe, current_candidate,
+#                                       jaccard_threshold))
+#             indexing_prefix_len_s = indexing_prefix_length(current_candidate,
+#                                                            t)
+#             probing_prefix_position_r = min(probing_prefix_len, len(probe) - 1)
+#             indexing_prefix_position_s = min(indexing_prefix_len_s,
+#                                              len(current_candidate) - 1)
+#             w_r = probe[probing_prefix_position_r]
+#             w_s = current_candidate[indexing_prefix_position_s]
+#             if w_r < w_s:
+#                 ret = verify(probe, current_candidate, t=req_overlap,
+#                              olap=M[s], p_r=probing_prefix_len, p_s=M[s])
+#             else:
+#                 ret = verify(probe, current_candidate, t=req_overlap,
+#                              olap=M[s], p_r=M[s], p_s=indexing_prefix_len_s)
+#             if ret:
+#                 res.append((r, s))
+# =============================================================================
+            if jaccard(probe, Data[s]) >= t:
                 res.append((r, s))
     return res
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Returns an output size and a real CPU time', epilog='Done',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+            description='Returns an output size and a real CPU time',
+            epilog='Done',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+            )
     parser.add_argument('filename', help="*.txt file in working directory",
                         type=str)
     parser.add_argument('jaccard_threshold', help="threshold for calculation",
                         type=float)
     args = parser.parse_args()
 
-    start = time.time()
+    start = time.process_time()
 
     jaccard_threshold = args.jaccard_threshold
     data = read_txt_list(args.filename)
 
-    pairs = AllPairs(data, threshold=jaccard_threshold)
+    pairs = AllPairs(data, t=jaccard_threshold)
 
-    end = time.time()
+    end = time.process_time()
 
     print(len(pairs))
     print(round(end - start, 2))
