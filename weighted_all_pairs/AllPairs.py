@@ -5,6 +5,7 @@
 
 import argparse
 import numpy as np
+import pandas as pd
 import time
 
 
@@ -18,7 +19,8 @@ def read_txt_list(filename):
     data_list = []
     with open(filename) as infile:
         for line in infile.readlines():
-            data_list.append([int(x) for x in line.split()])
+            tokens = [int(x) for x in line.split()]
+            data_list.append(tokens)
     return data_list
 
 
@@ -28,13 +30,12 @@ def read_weights(filename):
     return: list with weight of a token n at position n
             e.g. token 42: get the weight of this token with: weight_array[42]
     """
-    weight_array = [0]  # start with weight of token 1 at position 1
+    weights = [0]  # start with weight of token 1 at position 1
     with open(filename) as infile:
-        for line in infile.readlines():
+        for line in infile:
             row = line.strip().split(':')
-            weight = float(row[1])
-            weight_array.append(weight)
-    return weight_array
+            weights.append(float(row[1]))
+    return weights
 
 
 # =============================================================================
@@ -55,10 +56,20 @@ def weighted_jaccard(r, s, weights):
     s = set(s)
     intersect_weight = sum([weights[token] for token in r.intersection(s)])
     union_weight = sum([weights[token] for token in r.union(s)])
-    #diff_weight = sum([token2weight[x] for x in r.symmetric_difference(s)])
-    #union_weight = intersect_weight + diff_weight
     weighted_jaccard_similarity = intersect_weight / union_weight
     return weighted_jaccard_similarity
+
+
+def weighted_verify(r_rest, s_rest, r_weights_sum, s_weights_sum,
+                    weights, overlap, t):
+    r = set(r_rest)
+    s = set(s_rest)
+    rest_intersect_weight = sum([weights[token] for token in r.intersection(s)])
+    intersect_weight = rest_intersect_weight + overlap
+    union_weight = r_weights_sum + s_weights_sum - intersect_weight
+    weighted_jaccard_similiarty = intersect_weight / union_weight
+    return weighted_jaccard_similiarty >= t
+
 
 
 def verify(r, s, t, olap, p_r, p_s):
@@ -149,14 +160,13 @@ def weighted_probing_prefix_length(weight_left, t):
     index = 0  # check any set r until (including) the position 'index'
     while index < len(weight_left) and weight_left[index] >= lower_bound:
         index += 1
-    probing_prefix_length = index + 1
-    return probing_prefix_length
+    return index
 
 
 # NEW INDEXING PREFIX: under construction but not yet used
 # =============================================================================
 def weight_eqo(r_total_weight, s_total_weight, t):
-    return t / (t + 1) * (r_total_weight + s_total_weight)
+    return (t / (t + 1)) * (r_total_weight + s_total_weight)
 
 
 def weight_indexing_prefix_length(r_weight, t):
@@ -189,34 +199,41 @@ def AllPairs(Data, weights, t=0.7):
             integers for similarity search
     return: list of matching tuples
     """
+    global number_of_tokens
+    global I
     res = []  # result: collect pairs of similar tuples
-    I = {}  # inverted list (implemented as dictionary)
+    
+    number_of_tokens = max([x for sublist in Data for x in sublist])
+    I = [ None ] * (number_of_tokens + 1)  # inverted list
     
     for r, probe in enumerate(Data):
-        M = {}  # set of potential pairs
+        M = {}  # potential pairs
         
         r_weights = [weights[token] for token in probe]
         r_weight_left = weight_remaining_after_position(r_weights)
         r_weights_sum = r_weight_left[0]  # sum of weights of all tokens in r
         
-        for p in probe[0 : weighted_probing_prefix_length(r_weight_left, t)]:
-            if p in I.keys():
-                for i in range(len(I[p])-1, -1, -1):
-                    s = I[p][i]
+        weighted_pp_len = weighted_probing_prefix_length(r_weight_left, t)
+        #weighted_ip_len = weight_indexing_prefix_length(r_weights_sum, t)
+        
+        for token in probe[:weighted_pp_len]:
+            if I[token]:
+                for i in range(len(I[token])-1, -1, -1):
+                    s = I[token][i]
                     
                     s_weights_sum = sum([weights[token] for token in Data[s]])
                     if s_weights_sum <= weight_lb(r_weights_sum, t):
-                        del I[p][i]
+                        del I[token][i]
                     
                     else:
                         if M.get(s) is None:
                             M[s] = 0
-                        M[s] += 1
+                        M[s] += weights[token]
 
-        for p in probe[0 : indexing_prefix_length(probe, t)]:
-            if I.get(p) is None:
-                I[p] = []
-            I[p].append(r)
+        for token in probe[:weighted_pp_len]:
+            if I[token] is None:
+                I[token] = []
+            I[token].append(r)
 
         for s, overlap in M.items():
 # =============================================================================
@@ -241,7 +258,34 @@ def AllPairs(Data, weights, t=0.7):
 # =============================================================================
             if weighted_jaccard(probe, Data[s], weights) >= t:
                 res.append((r, s))
+# =============================================================================
+#             if weighted_verify(probe[weighted_pp_len:],
+#                                Data[s][weighted_pp_len:],
+#                                r_weights_sum, s_weights_sum,
+#                                weights, overlap, t):
+#                 res.append( (r, s) )
+# =============================================================================
     return res
+
+
+def compare_prefixes(data, weights, t):
+    """ just for analysis"""
+    normal_pp = []
+    weighted_pp = []
+    normal_ip = []
+    weighted_ip = []
+    for Tuple in data:
+        Tuple_weights = [weights[token] for token in Tuple]
+        Tuple_weight_left = weight_remaining_after_position(Tuple_weights)
+        normal_pp.append( probing_prefix_length(Tuple, t))
+        weighted_pp.append(weighted_probing_prefix_length(Tuple_weight_left, t))
+        normal_ip.append(indexing_prefix_length(Tuple, t))
+        weighted_ip.append(weight_indexing_prefix_length(Tuple_weight_left[0], t))
+    prefixes = pd.DataFrame({'normal_pp':normal_pp,
+                             'weighted_pp':weighted_pp,
+                             'normal_ip':normal_ip,
+                             'weighted_ip':weighted_ip})
+    return prefixes
 
 
 if __name__ == '__main__':
@@ -257,13 +301,16 @@ if __name__ == '__main__':
     parser.add_argument('jaccard_threshold', help="threshold for calculation",
                         type=float)
     args = parser.parse_args()
+    
 
     jaccard_threshold = args.jaccard_threshold
     data = read_txt_list(args.filename)
-    weight_dict = read_weights(args.weights_file)
+    weights = read_weights(args.weights_file)
     
+    #prefix_df = compare_prefixes(data, weights, jaccard_threshold)
+        
     start = time.process_time()
-    pairs = AllPairs(data, weight_dict, t=jaccard_threshold)
+    pairs = AllPairs(data, weights, t=jaccard_threshold)
     end = time.process_time()
 
     print(len(pairs))
